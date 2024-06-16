@@ -16,7 +16,7 @@ public class Blue : ModuleRules
 
         // Uncomment if you are using Slate UI
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
+        PrivateIncludePaths.Add("Plugins/MyPlugin/Source");
         // Uncomment if you are using online features
         // PrivateDependencyModuleNames.Add("OnlineSubsystem");
 

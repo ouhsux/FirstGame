@@ -53,46 +53,96 @@ void AMySpawnBox::Tick(float DeltaTime)
 			
 	}
 }
+//void AMySpawnBox::SpawnYin()
+//{
+//	int num = 0;
+//	for (auto& Pair : MyDictionary)
+//	{
+//		if (CurrentWave != num)
+//		{
+//			++num;
+//			continue;
+//		}
+//		int32 Value = Pair.Value;
+//		CurrentName = Pair.Key;
+//		float DelayTime = 3.0f;
+//		CanMake = false;
+//		FTimerHandle DelayTimerHandle;
+//		GetWorld()->GetTimerManager().SetTimer(DelayTimerHandle, [this, Value]()
+//			{SpawnWave(Value);}, DelayTime, false);
+//		break;
+//	}
+//	int32 IndexToFind = CurrentWave; // 假设要查找索引为 1 的值
+//	//// 遍历字典来查找整数索引对应的值
+//	int32 FoundValue = -1; // 默认为 -1 表示未找到
+//	for (auto& Pair : MyDictionary) {
+//	//	// 如果找到相应的整数索引
+//		if (IndexToFind == 0) {
+//			FoundValue = Pair.Value;
+//			CurrentName = Pair.Key;
+//			break;
+//		}
+//		IndexToFind--;
+//	}
+//
+//	//// 输出结果
+//	if (FoundValue != -1) {
+//		SpawnWave(FoundValue);
+//	}
+//	else {
+//		
+//	}
+//
+//}
+
+//void AMySpawnBox::SpawnWave(int32 num)
+//{
+//	AudioComponent->Play();
+//	FActorSpawnParameters SpawnParams;
+//	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+//	int index = FMath::RandRange(0, 2);
+//	while (num--)
+//	{
+//		if (GetWorld()->SpawnActor<AMy_Enemy>(AMy_Enemy::StaticClass(), TransformArray[index], SpawnParams))
+//		{
+//			index = FMath::RandRange(0, 2);
+//		}
+//		else
+//		{
+//			FString notify = "sheng cheng yi ge";
+//			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, notify);
+//		}
+//	}
+//	if(CurrentWave < MaxWave)
+//		CurrentWave++;
+//	else
+//	{
+//		return;
+//	}
+//	CanMake = true;
+//}
 void AMySpawnBox::SpawnYin()
 {
-	//int num = 0;
-	//for (auto& Pair : MyDictionary)
-	//{
-	//	if (CurrentWave != num)
-	//	{
-	//		++num;
-	//		continue;
-	//	}
-	//	int32 Value = Pair.Value;
-	//	CurrentName = Pair.Key;
-	//	float DelayTime = 3.0f;
-	//	CanMake = false;
-	//	FTimerHandle DelayTimerHandle;
-	//	GetWorld()->GetTimerManager().SetTimer(DelayTimerHandle, [this, Value]()
-	//		{SpawnWave(Value);}, DelayTime, false);
-	//	break;
-	//}
-	int32 IndexToFind = CurrentWave; // 假设要查找索引为 1 的值
-	// 遍历字典来查找整数索引对应的值
-	int32 FoundValue = -1; // 默认为 -1 表示未找到
-	for (auto& Pair : MyDictionary) {
-		// 如果找到相应的整数索引
-		if (IndexToFind == 0) {
-			FoundValue = Pair.Value;
-			CurrentName = Pair.Key;
-			break;
+	int num = 0;
+	for (auto& Pair : MyDictionary)
+	{
+		if (CurrentWave != num)
+		{
+			++num;
+			continue;
 		}
-		IndexToFind--;
+		int32 Value = Pair.Value;
+		CurrentName = Pair.Key;
+		float DelayTime = 3.0f;
+		CanMake = false;
+		FTimerHandle DelayTimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(DelayTimerHandle, [this, Value]()
+			{
+				SpawnWave(Value);
+				CanMake = true; // Set CanMake back to true after spawning
+			}, DelayTime, false);
+		break;
 	}
-
-	// 输出结果
-	if (FoundValue != -1) {
-		SpawnWave(FoundValue);
-	}
-	else {
-		
-	}
-
 }
 
 void AMySpawnBox::SpawnWave(int32 num)
@@ -113,13 +163,8 @@ void AMySpawnBox::SpawnWave(int32 num)
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, notify);
 		}
 	}
-	if(CurrentWave < MaxWave)
+	if (CurrentWave < MaxWave)
 		CurrentWave++;
-	else
-	{
-		return;
-	}
-	CanMake = true;
 }
 
 bool AMySpawnBox::Check()

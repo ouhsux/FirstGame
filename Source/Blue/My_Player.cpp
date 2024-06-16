@@ -17,7 +17,7 @@ AMy_Player::AMy_Player()
 	AudioComponent->SetSound(MySound);
 	SpawnUserWidget();
 	GetMesh()->SetupAttachment(GetCapsuleComponent());
-	AMy_Player::SetCharacterMeshPosition(this);
+	SetCharacterMeshPosition();
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(GetCapsuleComponent());
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -31,37 +31,96 @@ AMy_Player::AMy_Player()
 
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
-void AMy_Player::SetCharacterMeshPosition(ACharacter* Character)
+void AMy_Player::SetCharacterMeshPosition()
+
 {
-		// 获取Character的Mesh Component
-	if (Character)
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (MeshComponent)
 	{
-		USkeletalMeshComponent* MeshComponent = GetMesh();
-		if (MeshComponent)
+		FVector NewLocation = FVector(0.0f, 0.0f, -89.0f);
+		MeshComponent->SetRelativeLocation(NewLocation);
+		FQuat NewRotation = FQuat(FRotator(0.0f, -90.0f, 0.0f)); // 旋转角度自定义
+		MeshComponent->SetRelativeRotation(NewRotation);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Mesh Component is nullptr!"));
+	}
+}
+// Called when the game starts or when spawned
+
+void AMy_Player::OnMontageBegin(FName MontageName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload)
+{
+
+	FVector TraceStart = Arrow1->GetComponentLocation();
+	FVector TraceEnd = TraceStart + Arrow1->GetForwardVector() * 100.0f;
+	float TraceRadius = 25.0f;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+	TArray<AActor*> IgnoreActors;
+	IgnoreActors.Add(this);
+	FHitResult OutHit;
+
+	bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
+		GetWorld(),
+		TraceStart,
+		TraceEnd,
+		TraceRadius,
+		ObjectTypes,
+		false,
+		IgnoreActors,
+		EDrawDebugTrace::None,
+		OutHit,
+		true
+	);
+
+	if (bHit)
+	{
+		if (AMy_Enemy* HitPlayerCharacter = Cast<AMy_Enemy>(OutHit.GetActor()))
 		{
-			FVector NewLocation = FVector(0.0f, 0.0f, -89.0f);
-			MeshComponent->SetRelativeLocation(NewLocation);
-			FQuat NewRotation = FQuat(FRotator(0.0f, -90.0f, 0.0f)); // 旋转角度自定义
-			MeshComponent->SetRelativeRotation(NewRotation);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Mesh Component is nullptr!"));
+			HitPlayerCharacter->take_damage(BashDamage, this->GetActorForwardVector());
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("character is nullptr!"));
-	}
 
+	}
 }
-// Called when the game starts or when spawned
+
+void AMy_Player::OnMontageEnd(UAnimMontage* MontageName, bool bInterrupted)
+{
+	//FString TestHUDString = "Attack";
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TestHUDString);
+	Canattack = true;
+}
+
 void AMy_Player::BeginPlay()
 {
 	Super::BeginPlay();
-	AnimInstance = GetMesh()->GetAnimInstance();
-	AnimInstance->OnMontageEnded.AddDynamic(this, &AMy_Player::OnMontageEnd);
-	AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &AMy_Player::OnMontageBegin);
+	
+	/*FSoftObjectPath AnimAssetPath(TEXT("/Game/Characters/Mannequin_UE4/Our/ABP_Player.ABP_Player"));
+	UAnimBlueprint* AnimBlueprint = Cast<UAnimBlueprint>(AnimAssetPath.TryLoad());
+
+	if (AnimBlueprint)
+	{
+		GetMesh()->SetAnimInstanceClass(AnimBlueprint->GeneratedClass);
+		UE_LOG(LogTemp, Warning, TEXT("AnimBlueprint Found!"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AnimBlueprint Not Found!"));
+	}*/
+
+
+	FScriptDelegate PushDelegate;
+	FScriptDelegate PushEndDelegate;
+	PushDelegate.BindUFunction(this, FName("OnMontageBegin"));
+	PushEndDelegate.BindUFunction(this, FName("OnMontageEnd"));
+	GetMesh()->GetAnimInstance()->OnMontageEnded.Add(PushEndDelegate);
+	//GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.AddDynamic(this, &AMy_Enemy::OnMontageBegin);
+	GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.Add(PushDelegate);
+	//OnMoveCompletedDelegate.AddDynamic(this, &AMy_Enemy::OnMoveCompleted);
+
 }
 // Called every frame
 void AMy_Player::Tick(float DeltaTime)
@@ -78,6 +137,18 @@ void AMy_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	PlayerInputComponent->BindAxis(TEXT("MoveFB"), this, &AMy_Player::MoveFB);
 	PlayerInputComponent->BindAxis(TEXT("MoveLR"), this, &AMy_Player::MoveLR);
 	PlayerInputComponent->BindAction(TEXT("attack"), IE_Pressed, this, &AMy_Player::AttackInput);
+	if (GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		FScriptDelegate PushEndDelegate;
+		PushEndDelegate.BindUFunction(this, FName("OnMontageEnd"));
+		GetMesh()->GetAnimInstance()->OnMontageEnded.Add(PushEndDelegate);
+	}
+	if (GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		FScriptDelegate PushDelegate;
+		PushDelegate.BindUFunction(this, FName("OnMontageBegin"));
+		GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.Add(PushDelegate);
+	}
 }
 
 void AMy_Player::LoadAssets(FString SkeletalMesh)
@@ -90,14 +161,72 @@ void AMy_Player::LoadAssets(FString SkeletalMesh)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SkeletalMesh Not Found!"));
 	}
-	static ConstructorHelpers::FObjectFinder<UAnimBlueprint>AnimAsset(TEXT("/Script/Engine.AnimBlueprint'/Game/Characters/Mannequin_UE4/Our/ABP_Player.ABP_Player'"));
+	static ConstructorHelpers::FClassFinder<UAnimInstance>AnimAsset(TEXT("/Script/Engine.AnimBlueprint'/Game/Characters/Mannequin_UE4/Our/ABP_Player.ABP_Player_C'"));
 	if (AnimAsset.Succeeded()) {
-		GetMesh()->SetAnimInstanceClass(AnimAsset.Object->GeneratedClass);
+		GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+		GetMesh()->SetAnimInstanceClass(AnimAsset.Class);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AnimBlueprint Not Found!"));
 	}
+
+	/*FSoftObjectPath AnimAssetPath(TEXT("/Game/Characters/Mannequin_UE4/Our/ABP_Player.ABP_Player"));
+	UObject* LoadedObject = StaticLoadObject(UAnimBlueprint::StaticClass(), nullptr, *AnimAssetPath.ToString());
+	UAnimBlueprint* AnimBlueprint = Cast<UAnimBlueprint>(LoadedObject);
+	if (AnimBlueprint)
+	{
+		GetMesh()->SetAnimInstanceClass(AnimBlueprint->GeneratedClass);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AnimBlueprint Not Found!"));
+	}*/
+
+	//FSoftObjectPath AnimAssetPath(TEXT("/Game/UI/ABP_Player2.ABP_Player2'"));
+	//FString PackageName = FPackageName::ObjectPathToPackageName(AnimAssetPath.ToString());
+	//UAnimBlueprint* AnimBlueprint = LoadObject<UAnimBlueprint>(nullptr, *PackageName);
+	//if (AnimBlueprint)
+	//{
+	//	GetMesh()->SetAnimInstanceClass(AnimBlueprint->GeneratedClass);
+	//}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("AnimBlueprint Not Found!"));
+	//}
+
+	
+	//UClass* AnimBlueprintClass = LoadClass<UAnimBlueprint>(nullptr, TEXT("/Game/Characters/Mannequin_UE4/Our/ABP_Player.ABP_Player"), nullptr, LOAD_None, nullptr);
+	//if (AnimBlueprintClass)
+	//{
+	//	GetMesh()->SetAnimInstanceClass(AnimBlueprintClass);
+	//}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("AnimBlueprint Not Found!"));
+	//}
+
+
+
+	//FSoftObjectPath AnimAssetPath(TEXT("/Game/UI/ABP_Player2.ABP_Player2"));
+	//FString PackageName = FPackageName::ObjectPathToPackageName(AnimAssetPath.ToString());
+
+	//// 异步加载动画蓝图
+	//TSoftObjectPtr<UAnimBlueprint> AnimBlueprintPtr(AnimAssetPath);
+	//AnimBlueprintPtr.LoadSynchronous();
+
+	////// 检查是否成功加载动画蓝图
+	//if (UAnimBlueprint* AnimBlueprint = AnimBlueprintPtr.Get())
+	//{
+	////	// 设置动画实例类
+	//	GetMesh()->SetAnimInstanceClass(AnimBlueprint->GeneratedClass);
+	//	UE_LOG(LogTemp, Warning, TEXT("动画蓝图成功加载：%s"), *AnimBlueprint->GetName());
+	//}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("%s动画蓝图未找到："), *AnimAssetPath.ToString());
+	//}
+
 	static ConstructorHelpers::FObjectFinder<UAnimMontage>PushMontageAsset(TEXT("/Script/Engine.AnimMontage'/Game/Characters/Mannequin_UE4/Our/Push_Montage.Push_Montage'"));
 	if (PushMontageAsset.Succeeded())
 	{
@@ -171,51 +300,6 @@ void AMy_Player::AttackInput()
 	}
 }
 
-void AMy_Player::OnMontageBegin(FName MontageName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload)
-{	
-	
-		FVector TraceStart = Arrow1->GetComponentLocation();
-		FVector TraceEnd = TraceStart + Arrow1->GetForwardVector() * 100.0f;
-		float TraceRadius = 25.0f;
-		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
-		TArray<AActor*> IgnoreActors;
-		IgnoreActors.Add(this);
-		FHitResult OutHit;
-
-		bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
-			GetWorld(),
-			TraceStart,
-			TraceEnd,
-			TraceRadius,
-			ObjectTypes,
-			false,
-			IgnoreActors,
-			EDrawDebugTrace::None,
-			OutHit,
-			true
-		);
-
-		if (bHit)
-		{
-			if (AMy_Enemy* HitPlayerCharacter = Cast<AMy_Enemy>(OutHit.GetActor()))
-			{
-				HitPlayerCharacter->take_damage(BashDamage,this->GetActorForwardVector());
-			}
-		}
-		else
-		{
-
-		}
-}
-
-void AMy_Player::OnMontageEnd(UAnimMontage* MontageName, bool bInterrupted)
-{
-	//FString TestHUDString = "Attack";
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TestHUDString);
-	Canattack=true;
-}
-
 void AMy_Player::take_damage(float value,FVector ImpulseDirection)
 {
 	AudioComponent->Play();
@@ -249,7 +333,6 @@ void AMy_Player::take_damage(float value,FVector ImpulseDirection)
 	}
 }
 
-
 void AMy_Player::SpawnUserWidget()
 {
 	HealthBarWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/UI/WB_HealthBar.WB_HealthBar_C'"));
@@ -259,7 +342,7 @@ void AMy_Player::SpawnUserWidget()
 		if (HealthBarWidget)
 		{
 		
-			HealthBarWidget->AddToViewport();
+			HealthBarWidget->AddToViewport(-1000);
 		}
 	}
 	WavesWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/UI/WB_HUD.WB_HUD_C'"));
@@ -268,7 +351,7 @@ void AMy_Player::SpawnUserWidget()
 		WavesWidget = CreateWidget<UUserWidget>(GetWorld(), WavesWidgetClass);
 		if (WavesWidget)
 		{
-			WavesWidget->AddToViewport();
+			WavesWidget->AddToViewport(-1000);
 		}
 	}
 }

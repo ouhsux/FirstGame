@@ -45,8 +45,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	class UAnimMontage* AttackMontage;
-	UPROPERTY(EditDefaultsOnly)
-	class UAnimInstance* AnimInstance;
+	//UPROPERTY(EditDefaultsOnly)
+	//class UAnimInstance* AnimInstance;
 	
 
 protected:
@@ -57,7 +57,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	UArrowComponent* Arrow1;
 protected:
-	void SetCharacterMeshPosition(ACharacter* Character);
+	void SetCharacterMeshPosition();
 	void LoadAssets(FString SkeletalMesh);
 	FString MySkeletalMesh = TEXT("/Script/Engine.SkeletalMesh'/Game/SCK_Casual01/Models/Premade_Characters/MESH_PC_03.MESH_PC_03'");
 	
@@ -103,8 +103,8 @@ public:
 	UUserWidget* HealthBarWidget;
 	UUserWidget* WavesWidget;
 
-	UFUNCTION(BlueprintImplementableEvent)
-	void DamageScreen();
+	//UFUNCTION(BlueprintImplementableEvent)
+	//void DamageScreen();
 public:
 	USoundBase* MySound;
 	UAudioComponent* AudioComponent;

@@ -38,10 +38,14 @@ void AMy_Enemy::BeginPlay()
 {
 	Super::BeginPlay();
 	AMy_Enemy::InitializeAIController();
-	AnimInstance = GetMesh()->GetAnimInstance();
-	AnimInstance->OnMontageEnded.AddDynamic(this, &AMy_Enemy::OnMontageEnd);
-	AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &AMy_Enemy::OnMontageBegin);
-	/*OnMoveCompletedDelegate.AddDynamic(this, &AMy_Enemy::OnMoveCompleted);*/
+	FScriptDelegate PushDelegate;
+	FScriptDelegate PushEndDelegate;
+	PushDelegate.BindUFunction(this, FName("OnMontageBegin"));
+	PushEndDelegate.BindUFunction(this, FName("OnMontageEnd"));
+	GetMesh()->GetAnimInstance()->OnMontageEnded.Add(PushEndDelegate);
+	////GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.AddDynamic(this, &AMy_Enemy::OnMontageBegin);
+	GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.Add(PushDelegate);
+	//OnMoveCompletedDelegate.AddDynamic(this, &AMy_Enemy::OnMoveCompleted);
 }
 // Called every frame
 void AMy_Enemy::Tick(float DeltaTime)
@@ -250,14 +254,26 @@ void AMy_Enemy::LoadAssets()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SkeletalMesh Not Found!"));
 	}
-	static ConstructorHelpers::FObjectFinder<UAnimBlueprint>AnimAsset(TEXT("/Script/Engine.AnimBlueprint'/Game/Characters/Mannequin_UE4/Our/ABP_Player.ABP_Player'"));
+	//static ConstructorHelpers::FObjectFinder<UAnimBlueprint>AnimAsset(TEXT("/Script/Engine.AnimBlueprint'/Game/Characters/Mannequin_UE4/Our/ABP_Player.ABP_Player'"));
+	//if (AnimAsset.Succeeded()) {
+	//	GetMesh()->SetAnimInstanceClass(AnimAsset.Object->GeneratedClass);
+	//}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("AnimBlueprint Not Found!"));
+	//}
+
+	static ConstructorHelpers::FClassFinder<UAnimInstance>AnimAsset(TEXT("/Script/Engine.AnimBlueprint'/Game/Characters/Mannequin_UE4/Our/ABP_Player.ABP_Player_C'"));
 	if (AnimAsset.Succeeded()) {
-		GetMesh()->SetAnimInstanceClass(AnimAsset.Object->GeneratedClass);
+		GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+		GetMesh()->SetAnimInstanceClass(AnimAsset.Class);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AnimBlueprint Not Found!"));
 	}
+
+
 	static ConstructorHelpers::FObjectFinder<UAnimMontage>PushMontageAsset(TEXT("/Script/Engine.AnimMontage'/Game/Characters/Mannequin_UE4/Our/Push_Montage.Push_Montage'"));
 	if (PushMontageAsset.Succeeded())
 	{

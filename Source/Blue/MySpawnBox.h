@@ -55,5 +55,4 @@ public:
 	bool Check();
 	void SpawnWave(int32 num);
 	void SpawnYin();
-	void SetMyLocation();
 };

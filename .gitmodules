@@ -1,0 +1,3 @@
+[submodule "plugins/MyF"]
+	path = plugins/MyF
+	url = https://github.com/ouhsux/Plugin.git

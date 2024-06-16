@@ -10,10 +10,12 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
-				"AIModule"
+				"AIModule",
+				"MyF"
 			]
 		}
 	],
+
 	"Plugins": [
 		{
 			"Name": "ModelingToolsEditorMode",
@@ -21,6 +23,13 @@
 			"TargetAllowList": [
 				"Editor"
 			]
+		}
+	],
+
+	"Plugins": [
+		{
+			"Name": "MyF", 
+			"Enabled": true
 		}
 	]
 }
