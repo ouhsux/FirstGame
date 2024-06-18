@@ -78,6 +78,7 @@ void AMy_Player::OnMontageBegin(FName MontageName, const FBranchingPointNotifyPa
 	{
 		if (AMy_Enemy* HitPlayerCharacter = Cast<AMy_Enemy>(OutHit.GetActor()))
 		{
+			UE_LOG(LogTemp, Warning, TEXT("Damage: %f"), BashDamage);
 			HitPlayerCharacter->take_damage(BashDamage, this->GetActorForwardVector());
 		}
 	}
@@ -112,23 +113,23 @@ void AMy_Player::BeginPlay()
 	}*/
 
 
-	FScriptDelegate PushDelegate;
-	FScriptDelegate PushEndDelegate;
-	PushDelegate.BindUFunction(this, FName("OnMontageBegin"));
-	PushEndDelegate.BindUFunction(this, FName("OnMontageEnd"));
-	GetMesh()->GetAnimInstance()->OnMontageEnded.Add(PushEndDelegate);
-	//GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.AddDynamic(this, &AMy_Enemy::OnMontageBegin);
-	GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.Add(PushDelegate);
-	//OnMoveCompletedDelegate.AddDynamic(this, &AMy_Enemy::OnMoveCompleted);
+	//FScriptDelegate PushDelegate;
+	//FScriptDelegate PushEndDelegate;
+	//PushDelegate.BindUFunction(this, FName("OnMontageBegin"));
+	//PushEndDelegate.BindUFunction(this, FName("OnMontageEnd"));
+	//GetMesh()->GetAnimInstance()->OnMontageEnded.Add(PushEndDelegate);
+	////GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.AddDynamic(this, &AMy_Enemy::OnMontageBegin);
+	//GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.Add(PushDelegate);
+	////OnMoveCompletedDelegate.AddDynamic(this, &AMy_Enemy::OnMoveCompleted);
 
 }
-// Called every frame
+
 void AMy_Player::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 }
-// Called to bind functionality to input
+
 void AMy_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);

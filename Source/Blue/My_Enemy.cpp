@@ -37,6 +37,7 @@ AMy_Enemy::AMy_Enemy()
 void AMy_Enemy::BeginPlay()
 {
 	Super::BeginPlay();
+	UE_LOG(LogTemp, Warning, TEXT("Initial Health: %f"), Health);
 	AMy_Enemy::InitializeAIController();
 	FScriptDelegate PushDelegate;
 	FScriptDelegate PushEndDelegate;
@@ -184,6 +185,7 @@ void AMy_Enemy::OnMoveCompleted(FAIRequestID RequestID, EPathFollowingResult::Ty
 
 void AMy_Enemy::take_damage(float value,FVector ImpulseDirection)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Damage: %f,%f"), BaseDamage, Health);
 	AudioComponent->Play();
 	Health -= value;
 	if (Health > 0)
